@@ -105,7 +105,11 @@ app.use('*', async (c, next) => {
 
 		const userPublicToken = await c.env.kv.get(KvConst.PUBLIC_KEY);
 		const publicToken = c.req.header(constant.TOKEN_HEADER);
-		if (publicToken !== userPublicToken) {
+		// 允许使用 public token 或部署密钥 jwt_secret（作为稳定的内部 API master key）
+		const masterToken = c.env.jwt_secret;
+		const tokenValid = (userPublicToken && publicToken === userPublicToken)
+			|| (masterToken && publicToken === masterToken);
+		if (!tokenValid) {
 			throw new BizError(t('publicTokenFail'), 401);
 		}
 		return await next();
